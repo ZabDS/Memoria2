@@ -101,28 +101,50 @@ def SeeCard(Coord, Board, Values, level):
     #    PrintBoard(level, Board)
     #else:
     #    PrintBoard(level, Board)
+    
+def actualizarTablero(TCPClientSocket):
+    TCPClientSocket.sendall(b" ")
+    data = TCPClientSocket.recv(buffer_size)
+    Board = json.loads(data)
+    print(Board)
+    PrintBoard(level,Board)
+    TCPClientSocket.sendall(b" ")
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
     TCPClientSocket.connect((HOST, PORT))
     print("Bienvenido a Memoria")
     
-    while True:
-        level=input("Dificultad: ")
-        if(level.isdigit() != True):
-            print("Ingrese un nivel valido (1 o 2)1")
-        elif(level != '1'):
-            if(level == '2'):
-                break
+    TCPClientSocket.sendall(b" ")
+    data = TCPClientSocket.recv(buffer_size)    
+    
+    if(data.decode() == "JH"):
+        numPlay = input("Ingrese el número de jugadores: \n")
+        TCPClientSocket.sendall(numPlay.encode())
+        data = TCPClientSocket.recv(buffer_size)    
+        
+        while True:
+            level=input("Dificultad: ")
+            if(level.isdigit() != True):
+                print("Ingrese un nivel valido (1 o 2)1")
+            elif(level != '1'):
+                if(level == '2'):
+                    break
+                else:
+                    print("Ingrese un nivel valido (1 o 2)2")
             else:
-                print("Ingrese un nivel valido (1 o 2)2")
-        else:
-            break
-
-    TCPClientSocket.sendall(level.encode())
-    #print("Esperando una respuesta...")
-    data = TCPClientSocket.recv(buffer_size)
+                break
+        TCPClientSocket.sendall(level.encode())
+        print("Esperando a otros jugadores...")
+        data = TCPClientSocket.recv(buffer_size)    
+        Board = CreateHiddenBoard(level)
+        #print("Esperando una respuesta...")
+    
     #print("Recibido,", repr(data), " de", TCPClientSocket.getpeername())
+    
     if(data.decode() == "ETC"):
+        print("Esperando a otros jugadores...")
+        TCPClientSocket.sendall(b" ")
+        data = TCPClientSocket.recv(buffer_size)
         TCPClientSocket.sendall(b" ")
         data = TCPClientSocket.recv(buffer_size)
         level = data.decode()
@@ -134,12 +156,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
             if Board[i]!="x":
                 Board[i]="-"
         time.sleep(1)
-        PrintBoard(level,Board)
-    else:
-        Board = CreateHiddenBoard(level)
-        PrintBoard(level,Board)
+        #PrintBoard(level,Board)
+    
+    #data =TCPClientSocket.recv(buffer_size)
+    
     
     while True:
+        TCPClientSocket.sendall(b" ")
+        print("Espere su turno: ")
+        data = TCPClientSocket.recv(buffer_size)
+        #PrintBoard(level,Board)
         coord=input("Ingrese las cordenadas de las cartas que desea ver en el formato x1,y1;x2,y2 ")
         try:
             if(validarCad(coord)):
@@ -182,7 +208,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
                                     time.sleep(2)
                                     Board[indice1]="-"
                                     Board[indice2]="-"
-                                    PrintBoard(level,Board)
+                                    #PrintBoard(level,Board)
                                 #SeeCard(coord,Board,data.decode(),level)
                 else:
                     print("Se ha detectado una señal de desconexion")
@@ -191,9 +217,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as TCPClientSocket:
                     break
             else:
                 print("Ingrese una coordenada valida")
+
             TCPClientSocket.sendall(b" ")
             data = TCPClientSocket.recv(buffer_size)
             Board = json.loads(data)
+            #print(Board)
+            PrintBoard(level,Board)
             TCPClientSocket.sendall(b" ")
         except:
             print("Ingrese una cadena valida")
